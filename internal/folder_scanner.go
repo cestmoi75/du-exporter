@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ScanFolder(root string, logger *zap.Logger) {
+func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 	fileCount.Reset()
 	totalSize.Reset()
 	newestMTime.Reset()
@@ -24,14 +24,35 @@ func ScanFolder(root string, logger *zap.Logger) {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() {
-			subfolder := filepath.Join(root, entry.Name())
-			scanSubfolder(subfolder, entry, logger)
+		if !entry.IsDir() {
+			continue
 		}
+
+		subfolder := filepath.Join(root, entry.Name())
+		if isExcluded(root, subfolder, excludeDirs) {
+			continue
+		}
+
+		scanSubfolder(subfolder, entry, logger)
 	}
 
 	scanDuration.Observe(time.Since(start).Seconds())
 	scanCount.Inc()
+}
+
+func isExcluded(root, path string, excludes []string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	rel = filepath.Clean(rel)
+
+	for _, ex := range excludes {
+		if filepath.Clean(ex) == rel {
+			return true
+		}
+	}
+	return false
 }
 
 func scanSubfolder(subfolder string, entry os.DirEntry, logger *zap.Logger) {

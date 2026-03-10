@@ -13,14 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func runService(rootPath string, fileGlobs []string, intervalSec int, port int, logger *zap.Logger) {
+func runService(rootPath string, excludeDirs []string, fileGlobs []string, intervalSec int, port int, logger *zap.Logger) {
 	logger.Info("Starting service",
 		zap.String("root", rootPath),
 		zap.Int("interval", intervalSec),
 	)
 
 	go func() {
-		internal.ScanFolder(rootPath, logger)
+		internal.ScanFolder(rootPath, excludeDirs, logger)
 		internal.UpdateDiskMetrics(rootPath, logger)
 		internal.ScanFiles(rootPath, fileGlobs, logger)
 
@@ -28,7 +28,7 @@ func runService(rootPath string, fileGlobs []string, intervalSec int, port int, 
 		defer ticker.Stop()
 
 		for range ticker.C {
-			internal.ScanFolder(rootPath, logger)
+			internal.ScanFolder(rootPath, excludeDirs, logger)
 			internal.UpdateDiskMetrics(rootPath, logger)
 			internal.ScanFiles(rootPath, fileGlobs, logger)
 		}
@@ -46,6 +46,7 @@ func runService(rootPath string, fileGlobs []string, intervalSec int, port int, 
 
 func main() {
 	var rootPath string
+	var excludeDirs []string
 	var intervalSec int
 	var port int
 	var fileGlobs []string
@@ -65,11 +66,12 @@ func main() {
 		Use:   "du-exporter",
 		Short: "Expose Prometheus metrics for files in subfolders",
 		Run: func(cmd *cobra.Command, args []string) {
-			runService(rootPath, fileGlobs, intervalSec, port, logger)
+			runService(rootPath, excludeDirs, fileGlobs, intervalSec, port, logger)
 		},
 	}
 
 	rootCmd.Flags().StringVar(&rootPath, "root", "./watched", "Root folder to watch for files")
+	rootCmd.Flags().StringArrayVar(&excludeDirs, "exclude", []string{}, "Directories (relative to root) to ignore when scanning (can specify multiple)")
 	rootCmd.Flags().IntVar(&intervalSec, "interval", 300, "Scan interval in seconds")
 	rootCmd.Flags().IntVar(&port, "port", 8080, "Port to start the server on")
 	rootCmd.Flags().StringArrayVar(&fileGlobs, "glob", []string{}, "File glob patterns to include (can specify multiple)")
