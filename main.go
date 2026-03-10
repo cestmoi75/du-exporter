@@ -72,7 +72,7 @@ func main() {
 	rootCmd.Flags().StringVar(&rootPath, "root", "./watched", "Root folder to watch for files")
 	rootCmd.Flags().IntVar(&intervalSec, "interval", 300, "Scan interval in seconds")
 	rootCmd.Flags().IntVar(&port, "port", 8080, "Port to start the server on")
-	rootCmd.Flags().StringArrayVar(&fileGlobs, "glob", []string{"**/*.db"}, "File glob patterns to include (can specify multiple)")
+	rootCmd.Flags().StringArrayVar(&fileGlobs, "glob", []string{}, "File glob patterns to include (can specify multiple)")
 
 	if err := rootCmd.Execute(); err != nil {
 		logger.Fatal("Failed to execute command", zap.Error(err))
