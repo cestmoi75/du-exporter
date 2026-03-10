@@ -57,6 +57,7 @@ The application can be run directly from the command line:
 -   `--root`: Specifies the root folder to watch for files (default: `./watched`).
 -   `--interval`: Sets the scan interval in seconds (default: `300`).
 -   `--port`: Sets the port for the HTTP server (default: `8080`).
+-   `--glob`: Sets the File glob patterns to include (can specify multiple) (example: `**/*.db`).
 
 The application will expose metrics at `http://localhost:<port>/metrics` and a health check endpoint at `http://localhost:<port>/healthz`.
 
@@ -72,6 +73,10 @@ du_disk_total_bytes{path="../map-services/data"} 4.94384795648e+11
 # HELP du_disk_used_bytes Used bytes on the filesystem of a path
 # TYPE du_disk_used_bytes gauge
 du_disk_used_bytes{path="../map-services/data"} 3.75696912384e+11
+# HELP du_file_size_bytes Size of files matching configured globs (bytes)
+# TYPE du_file_size_bytes gauge
+du_file_size_bytes{path="/app/watched/@ActiveBackup/activity.db"} 512000
+du_file_size_bytes{path="/app/watched/@ActiveBackup/config.db"} 122880
 # HELP du_scan_duration_seconds Duration of the folder scan in seconds
 # TYPE du_scan_duration_seconds histogram
 du_scan_duration_seconds_bucket{le="0.005"} 0
