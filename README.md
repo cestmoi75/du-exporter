@@ -185,3 +185,10 @@ golangci-lint run
 -   Runs as a non-root user (`appuser`).
 -   Exposes port `8080`.
 -   Includes a health check endpoint.
+
+
+## ChangeLog
+
+### 2026-03
+- add `--exclude` to exclude scan subdir
+- when error occurs during subdir scanning log error then continue

@@ -62,7 +62,10 @@ func scanSubfolder(subfolder string, entry os.DirEntry, logger *zap.Logger) {
 
 	err := filepath.Walk(subfolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			logger.Error("Error accessing path during subfolder scan", zap.String("subfolder", subfolder), zap.String("path", path), zap.Error(err))
+			scanErrors.Inc()
+			// continue walking despite the error
+			return nil
 		}
 		if !info.IsDir() {
 			count++
