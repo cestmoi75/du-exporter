@@ -189,6 +189,12 @@ golangci-lint run
 
 ## ChangeLog
 
+### 2026-04
+- add du_folder_size_bytes metric
+  - sum of target folder and its subs 
+
+
 ### 2026-03
 - add `--exclude` to exclude scan subdir
 - when error occurs during subdir scanning log error then continue
+
