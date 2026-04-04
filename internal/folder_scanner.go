@@ -25,7 +25,6 @@ func ScanFolder(root string, excludeDirs []string, maxDepth int, logger *zap.Log
 		return
 	}
 
-	var grandTotalSize int64
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -36,12 +35,8 @@ func ScanFolder(root string, excludeDirs []string, maxDepth int, logger *zap.Log
 			continue
 		}
 
-		subSize := scanSubfolder(subfolder, entry.Name(), 1, maxDepth, logger)
-		grandTotalSize += subSize
+		scanSubfolder(subfolder, entry.Name(), 1, maxDepth, logger)
 	}
-
-	// 탑레벨 전체 사이즈를 totalSize 메트릭에 저장
-	totalSize.WithLabelValues(filepath.Base(root)).Set(float64(grandTotalSize))
 
 	scanDuration.Observe(time.Since(start).Seconds())
 	scanCount.Inc()
@@ -63,7 +58,7 @@ func isExcluded(root, path string, excludes []string) bool {
 }
 
 func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, logger *zap.Logger) int64 {
-	var totalSize int64
+	var folderTotalSize int64
 	var totalCount int
 	var newest, oldest int64
 
@@ -79,7 +74,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 			subRelPath := filepath.Join(relPath, entry.Name())
 			subFullPath := filepath.Join(fullPath, entry.Name())
 			subSize := scanSubfolder(subFullPath, subRelPath, depth+1, maxDepth, logger)
-			totalSize += subSize
+			folderTotalSize += subSize
 		} else {
 			info, err := entry.Info()
 			if err != nil {
@@ -88,7 +83,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 			}
 			totalCount++
 			fileSize := info.Size()
-			totalSize += fileSize
+			folderTotalSize += fileSize
 			mtime := info.ModTime().Unix()
 			if newest == 0 || mtime > newest {
 				newest = mtime
@@ -99,15 +94,20 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 		}
 	}
 
-	// 메트릭 저장 (depth 제한 내에서만)
+	// 메트릭 저장
+	// depth == 1일 때만 totalSize에 저장 (최상위 폴더 사이즈)
+	if depth == 1 {
+		totalSize.WithLabelValues(relPath).Set(float64(folderTotalSize))
+	}
+	// depth 제한 내에서만 folderSize에 저장
 	if depth <= maxDepth {
 		fileCount.WithLabelValues(relPath).Set(float64(totalCount))
-		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalSize))
+		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(folderTotalSize))
 		if totalCount > 0 {
 			newestMTime.WithLabelValues(relPath).Set(float64(newest))
 			oldestMTime.WithLabelValues(relPath).Set(float64(oldest))
 		}
 	}
 
-	return totalSize
+	return folderTotalSize
 }

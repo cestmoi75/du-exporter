@@ -110,7 +110,7 @@ var (
 
 func init() {
 	prometheus.MustRegister(
-		fileCount, totalSize, newestMTime, oldestMTime,
+		fileCount, totalSize, folderSize, newestMTime, oldestMTime,
 		diskTotal, diskUsed, diskFreePercent, diskUsedPercent,
 		scanDuration, scanCount, scanErrors, fileSize,
 	)
