@@ -58,7 +58,8 @@ The application can be run directly from the command line:
 -   `--interval`: Sets the scan interval in seconds (default: `300`).
 -   `--port`: Sets the port for the HTTP server (default: `8080`).
 -   `--glob`: Sets the File glob patterns to include (can specify multiple) (example: `**/*.db`).
--   `--exclude`: Sets the Directories (relative to root) to ignore when scanning (can specify multiple).
+-   `--exclude`: Sets the Directories (relative to root) to ignore when scanning (can specify multiple) (default: `[]`).
+-   `--limit_depth`: Maximum folder depth for folder metrics (1 = top-level subfolders only) (default: `1`)
 
 The application will expose metrics at `http://localhost:<port>/metrics` and a health check endpoint at `http://localhost:<port>/healthz`.
 
