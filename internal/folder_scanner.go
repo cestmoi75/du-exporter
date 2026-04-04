@@ -12,6 +12,7 @@ import (
 func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 	fileCount.Reset()
 	folderSize.Reset()
+	totalSize.Reset()
 	newestMTime.Reset()
 	oldestMTime.Reset()
 
@@ -24,6 +25,7 @@ func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 		return
 	}
 
+	var grandTotalSize int64
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -34,8 +36,12 @@ func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 			continue
 		}
 
-		scanSubfolder(subfolder, entry.Name(), 1, logger)
+		subSize := scanSubfolder(subfolder, entry.Name(), 1, logger)
+		grandTotalSize += subSize
 	}
+
+	// 탑레벨 전체 사이즈를 totalSize 메트릭에 저장
+	totalSize.WithLabelValues(filepath.Base(root)).Set(float64(grandTotalSize))
 
 	scanDuration.Observe(time.Since(start).Seconds())
 	scanCount.Inc()

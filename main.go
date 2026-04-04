@@ -13,14 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func runService(rootPath string, excludeDirs []string, fileGlobs []string, intervalSec int, port int, logger *zap.Logger) {
+func runService(rootPath string, excludeDirs []string, fileGlobs []string, intervalSec int, port int, limitDepth int, logger *zap.Logger) {
 	logger.Info("Starting service",
 		zap.String("root", rootPath),
 		zap.Int("interval", intervalSec),
+		zap.Int("limit_depth", limitDepth),
 	)
 
 	go func() {
-		internal.ScanFolder(rootPath, excludeDirs, logger)
+		internal.ScanFolder(rootPath, excludeDirs, limitDepth, logger)
 		internal.UpdateDiskMetrics(rootPath, logger)
 		internal.ScanFiles(rootPath, fileGlobs, logger)
 
@@ -28,7 +29,7 @@ func runService(rootPath string, excludeDirs []string, fileGlobs []string, inter
 		defer ticker.Stop()
 
 		for range ticker.C {
-			internal.ScanFolder(rootPath, excludeDirs, logger)
+			internal.ScanFolder(rootPath, excludeDirs, limitDepth, logger)
 			internal.UpdateDiskMetrics(rootPath, logger)
 			internal.ScanFiles(rootPath, fileGlobs, logger)
 		}
@@ -49,6 +50,7 @@ func main() {
 	var excludeDirs []string
 	var intervalSec int
 	var port int
+	var limitDepth int
 	var fileGlobs []string
 
 	logger, err := zap.NewProduction()
@@ -66,7 +68,7 @@ func main() {
 		Use:   "du-exporter",
 		Short: "Expose Prometheus metrics for files in subfolders",
 		Run: func(cmd *cobra.Command, args []string) {
-			runService(rootPath, excludeDirs, fileGlobs, intervalSec, port, logger)
+			runService(rootPath, excludeDirs, fileGlobs, intervalSec, port, limitDepth, logger)
 		},
 	}
 
@@ -74,6 +76,7 @@ func main() {
 	rootCmd.Flags().StringArrayVar(&excludeDirs, "exclude", []string{}, "Directories (relative to root) to ignore when scanning (can specify multiple)")
 	rootCmd.Flags().IntVar(&intervalSec, "interval", 300, "Scan interval in seconds")
 	rootCmd.Flags().IntVar(&port, "port", 8080, "Port to start the server on")
+	rootCmd.Flags().IntVar(&limitDepth, "limit_depth", 1, "Maximum folder depth for folder metrics (1 = top-level subfolders only)")
 	rootCmd.Flags().StringArrayVar(&fileGlobs, "glob", []string{}, "File glob patterns to include (can specify multiple)")
 
 	if err := rootCmd.Execute(); err != nil {
