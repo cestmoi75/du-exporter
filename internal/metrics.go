@@ -21,6 +21,14 @@ var (
 		[]string{"folder"},
 	)
 
+	folderSize = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "du_folder_size_bytes",
+			Help: "Size of files in a folder (bytes)",
+		},
+		[]string{"folder", "depth"},
+	)
+
 	newestMTime = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "du_subfolder_newest_mtime_seconds",

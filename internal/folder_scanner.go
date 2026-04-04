@@ -3,6 +3,7 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -10,7 +11,7 @@ import (
 
 func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 	fileCount.Reset()
-	totalSize.Reset()
+	folderSize.Reset()
 	newestMTime.Reset()
 	oldestMTime.Reset()
 
@@ -33,7 +34,7 @@ func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 			continue
 		}
 
-		scanSubfolder(subfolder, entry, logger)
+		scanSubfolder(subfolder, entry.Name(), 1, logger)
 	}
 
 	scanDuration.Observe(time.Since(start).Seconds())
@@ -55,21 +56,33 @@ func isExcluded(root, path string, excludes []string) bool {
 	return false
 }
 
-func scanSubfolder(subfolder string, entry os.DirEntry, logger *zap.Logger) {
-	var count int
-	var size int64
+func scanSubfolder(fullPath string, relPath string, depth int, logger *zap.Logger) int64 {
+	var totalSize int64
+	var totalCount int
 	var newest, oldest int64
 
-	err := filepath.Walk(subfolder, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			logger.Error("Error accessing path during subfolder scan", zap.String("subfolder", subfolder), zap.String("path", path), zap.Error(err))
-			scanErrors.Inc()
-			// continue walking despite the error
-			return nil
-		}
-		if !info.IsDir() {
-			count++
-			size += info.Size()
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		logger.Error("Error reading subfolder", zap.String("path", fullPath), zap.Error(err))
+		scanErrors.Inc()
+		return 0
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			subRelPath := filepath.Join(relPath, entry.Name())
+			subFullPath := filepath.Join(fullPath, entry.Name())
+			subSize := scanSubfolder(subFullPath, subRelPath, depth+1, logger)
+			totalSize += subSize
+		} else {
+			info, err := entry.Info()
+			if err != nil {
+				logger.Error("Error getting file info", zap.String("path", filepath.Join(fullPath, entry.Name())), zap.Error(err))
+				continue
+			}
+			totalCount++
+			fileSize := info.Size()
+			totalSize += fileSize
 			mtime := info.ModTime().Unix()
 			if newest == 0 || mtime > newest {
 				newest = mtime
@@ -78,19 +91,15 @@ func scanSubfolder(subfolder string, entry os.DirEntry, logger *zap.Logger) {
 				oldest = mtime
 			}
 		}
-		return nil
-	})
-
-	if err != nil {
-		logger.Error("Error scanning subfolder", zap.String("subfolder", subfolder), zap.Error(err))
-		scanErrors.Inc()
-		return
 	}
 
-	fileCount.WithLabelValues(entry.Name()).Set(float64(count))
-	totalSize.WithLabelValues(entry.Name()).Set(float64(size))
-	if count > 0 {
-		newestMTime.WithLabelValues(entry.Name()).Set(float64(newest))
-		oldestMTime.WithLabelValues(entry.Name()).Set(float64(oldest))
+	// 메트릭 저장
+	fileCount.WithLabelValues(relPath).Set(float64(totalCount))
+	folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalSize))
+	if totalCount > 0 {
+		newestMTime.WithLabelValues(relPath).Set(float64(newest))
+		oldestMTime.WithLabelValues(relPath).Set(float64(oldest))
 	}
+
+	return totalSize
 }
