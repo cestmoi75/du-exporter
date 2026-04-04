@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
+func ScanFolder(root string, excludeDirs []string, maxDepth int, logger *zap.Logger) {
 	fileCount.Reset()
 	folderSize.Reset()
 	totalSize.Reset()
@@ -36,7 +36,7 @@ func ScanFolder(root string, excludeDirs []string, logger *zap.Logger) {
 			continue
 		}
 
-		subSize := scanSubfolder(subfolder, entry.Name(), 1, logger)
+		subSize := scanSubfolder(subfolder, entry.Name(), 1, maxDepth, logger)
 		grandTotalSize += subSize
 	}
 
@@ -62,7 +62,7 @@ func isExcluded(root, path string, excludes []string) bool {
 	return false
 }
 
-func scanSubfolder(fullPath string, relPath string, depth int, logger *zap.Logger) int64 {
+func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, logger *zap.Logger) int64 {
 	var totalSize int64
 	var totalCount int
 	var newest, oldest int64
@@ -78,7 +78,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, logger *zap.Logge
 		if entry.IsDir() {
 			subRelPath := filepath.Join(relPath, entry.Name())
 			subFullPath := filepath.Join(fullPath, entry.Name())
-			subSize := scanSubfolder(subFullPath, subRelPath, depth+1, logger)
+			subSize := scanSubfolder(subFullPath, subRelPath, depth+1, maxDepth, logger)
 			totalSize += subSize
 		} else {
 			info, err := entry.Info()
@@ -99,12 +99,14 @@ func scanSubfolder(fullPath string, relPath string, depth int, logger *zap.Logge
 		}
 	}
 
-	// 메트릭 저장
-	fileCount.WithLabelValues(relPath).Set(float64(totalCount))
-	folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalSize))
-	if totalCount > 0 {
-		newestMTime.WithLabelValues(relPath).Set(float64(newest))
-		oldestMTime.WithLabelValues(relPath).Set(float64(oldest))
+	// 메트릭 저장 (depth 제한 내에서만)
+	if depth <= maxDepth {
+		fileCount.WithLabelValues(relPath).Set(float64(totalCount))
+		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalSize))
+		if totalCount > 0 {
+			newestMTime.WithLabelValues(relPath).Set(float64(newest))
+			oldestMTime.WithLabelValues(relPath).Set(float64(oldest))
+		}
 	}
 
 	return totalSize
