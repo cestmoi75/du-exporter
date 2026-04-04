@@ -101,7 +101,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 	}
 	// depth 제한 내에서만 folderSize에 저장
 	if depth <= maxDepth {
-		fileCount.WithLabelValues(relPath).Set(float64(totalCount))
+		fileCount.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalCount))
 		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(folderTotalSize))
 		if totalCount > 0 {
 			newestMTime.WithLabelValues(relPath).Set(float64(newest))

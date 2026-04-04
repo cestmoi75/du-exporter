@@ -10,7 +10,7 @@ var (
 			Name: "du_subfolder_file_count",
 			Help: "Number of files in a subfolder",
 		},
-		[]string{"folder"},
+		[]string{"folder", "depth"},
 	)
 
 	totalSize = prometheus.NewGaugeVec(
