@@ -2,9 +2,8 @@ FROM golang:1.26-alpine AS build
 
 RUN apk update && \
     apk add --no-cache ca-certificates tzdata && \
-    update-ca-certificates
-
-RUN adduser -D -g '' appuser
+    update-ca-certificates && \
+    adduser -D -g '' appuser
 
 WORKDIR /app
 
@@ -21,9 +20,9 @@ FROM alpine:latest AS runtime
 ENV TZ=UTC
 
 RUN apk --no-cache add curl ca-certificates tzdata && \
-    update-ca-certificates
+    update-ca-certificates && \
+    adduser -D -g '' appuser
 
-RUN adduser -D -g '' appuser
 WORKDIR /app
 
 COPY --from=build /app/du-exporter .
