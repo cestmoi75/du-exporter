@@ -104,8 +104,8 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 		fileCount.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalCount))
 		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(folderTotalSize))
 		if totalCount > 0 {
-			newestMTime.WithLabelValues(relPath).Set(float64(newest))
-			oldestMTime.WithLabelValues(relPath).Set(float64(oldest))
+			newestMTime.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(newest))
+			oldestMTime.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(oldest))
 		}
 	}
 

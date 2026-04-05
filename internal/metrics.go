@@ -34,7 +34,7 @@ var (
 			Name: "du_subfolder_newest_mtime_seconds",
 			Help: "Modification time of the newest file in a subfolder (epoch seconds)",
 		},
-		[]string{"folder"},
+		[]string{"folder", "depth"},
 	)
 
 	oldestMTime = prometheus.NewGaugeVec(
@@ -42,7 +42,7 @@ var (
 			Name: "du_subfolder_oldest_mtime_seconds",
 			Help: "Modification time of the oldest file in a subfolder (epoch seconds)",
 		},
-		[]string{"folder"},
+		[]string{"folder", "depth"},
 	)
 
 	scanDuration = prometheus.NewHistogram(
