@@ -96,16 +96,25 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 
 	// 메트릭 저장
 	// depth == 1일 때만 totalSize에 저장 (최상위 폴더 사이즈)
+	
+	folderName := filepath.Base(relPath)
+	var parentPath string
 	if depth == 1 {
-		totalSize.WithLabelValues(relPath).Set(float64(folderTotalSize))
+		parentPath = "/"
+	} else {
+		parentPath = "/" + filepath.Dir(relPath)
+	}
+	
+	if depth == 1 {
+		totalSize.WithLabelValues(folderName, parentPath).Set(float64(folderTotalSize))
 	}
 	// depth 제한 내에서만 folderSize에 저장
 	if depth <= maxDepth {
-		fileCount.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(totalCount))
-		folderSize.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(folderTotalSize))
+		fileCount.WithLabelValues(folderName, parentPath, strconv.Itoa(depth)).Set(float64(totalCount))
+		folderSize.WithLabelValues(folderName, parentPath, strconv.Itoa(depth)).Set(float64(folderTotalSize))
 		if totalCount > 0 {
-			newestMTime.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(newest))
-			oldestMTime.WithLabelValues(relPath, strconv.Itoa(depth)).Set(float64(oldest))
+			newestMTime.WithLabelValues(folderName, parentPath, strconv.Itoa(depth)).Set(float64(newest))
+			oldestMTime.WithLabelValues(folderName, parentPath, strconv.Itoa(depth)).Set(float64(oldest))
 		}
 	}
 
