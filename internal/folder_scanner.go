@@ -57,23 +57,24 @@ func isExcluded(root, path string, excludes []string) bool {
 	return false
 }
 
-func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, logger *zap.Logger) int64 {
+func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, logger *zap.Logger) (int64, int64) {
 	var folderTotalSize int64
-	var totalCount int
+	var totalCount int64
 	var newest, oldest int64
 
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
 		logger.Error("Error reading subfolder", zap.String("path", fullPath), zap.Error(err))
 		scanErrors.Inc()
-		return 0
+		return 0, 0
 	}
 
 	for _, entry := range entries {
 		if entry.IsDir() {
 			subRelPath := filepath.Join(relPath, entry.Name())
 			subFullPath := filepath.Join(fullPath, entry.Name())
-			subSize := scanSubfolder(subFullPath, subRelPath, depth+1, maxDepth, logger)
+			subCount, subSize := scanSubfolder(subFullPath, subRelPath, depth+1, maxDepth, logger)
+			totalCount += subCount
 			folderTotalSize += subSize
 		} else {
 			info, err := entry.Info()
@@ -96,7 +97,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 
 	// 메트릭 저장
 	// depth == 1일 때만 totalSize에 저장 (최상위 폴더 사이즈)
-	
+
 	folderName := filepath.Base(relPath)
 	var parentPath string
 	if depth == 1 {
@@ -104,7 +105,7 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 	} else {
 		parentPath = "/" + filepath.Dir(relPath)
 	}
-	
+
 	if depth == 1 {
 		totalSize.WithLabelValues(folderName, parentPath).Set(float64(folderTotalSize))
 	}
@@ -118,5 +119,5 @@ func scanSubfolder(fullPath string, relPath string, depth int, maxDepth int, log
 		}
 	}
 
-	return folderTotalSize
+	return totalCount, folderTotalSize
 }

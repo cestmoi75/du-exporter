@@ -32,9 +32,9 @@ func TestScanFolderMetrics(t *testing.T) {
 	os.MkdirAll(folder2, 0755)
 
 	// Create test files
-	os.WriteFile(filepath.Join(folder1, "file1.txt"), []byte("0123456789"), 0644)                    // 10 bytes
-	os.WriteFile(filepath.Join(subfolder1, "file2.txt"), []byte("01234567890123456789"), 0644)       // 20 bytes
-	os.WriteFile(filepath.Join(folder2, "file3.txt"), []byte("012345678901234567890123456789"), 0644)   // 30 bytes
+	os.WriteFile(filepath.Join(folder1, "file1.txt"), []byte("0123456789"), 0644)                     // 10 bytes
+	os.WriteFile(filepath.Join(subfolder1, "file2.txt"), []byte("01234567890123456789"), 0644)        // 20 bytes
+	os.WriteFile(filepath.Join(folder2, "file3.txt"), []byte("012345678901234567890123456789"), 0644) // 30 bytes
 
 	// Scan the directory
 	ScanFolder(tmpDir, []string{}, 2, logger)
@@ -54,7 +54,7 @@ func TestScanFolderMetrics(t *testing.T) {
 				"parent_path": "/",
 				"depth":       "1",
 			},
-			expectedVal: 1,
+			expectedVal: 2, // file1.txt + file2.txt in subfolder1
 		},
 		{
 			name:       "folder1 size at depth 1",
